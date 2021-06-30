@@ -1,36 +1,22 @@
 import os
-import discord
 import random
 from dotenv import load_dotenv
 
+# 1
+from discord.ext import commands
+
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
 
-intents = discord.Intents.default()
-intents.members = True
+# 2
+bot = commands.Bot(command_prefix='!')
 
-client = discord.Client(intents=intents)
-
-@client.event
+@bot.event
 async def on_ready():
-    print(f'{client.user} has connected to Discord!')
+    print(f'{bot.user.name} has connected to Discord!')
 
-    guild = discord.utils.get(client.guilds, name=GUILD)
-    
-    print(
-        f'{client.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})'
-    )
-
-    members = [member.name for member in guild.members]
-    print(members)
-
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
+@bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
+async def nine_nine(ctx):
     brooklyn_99_quotes = [
         'I\'m the human form of the 💯 emoji.',
         'Bingpot!',
@@ -40,8 +26,15 @@ async def on_message(message):
         ),
     ]
 
-    if message.content == '99!':
-        response = random.choice(brooklyn_99_quotes)
-        await message.channel.send(response)
+    response = random.choice(brooklyn_99_quotes)
+    await ctx.send(response)
 
-client.run(TOKEN)
+@bot.command(name='roll_dice', help='Simulates rolling dice.')
+async def roll(ctx, number_of_dice: int, number_of_sides: int):
+    dice = [
+        str(random.choice(range(1, number_of_sides + 1)))
+        for _ in range(number_of_dice)
+    ]
+    await ctx.send(', '.join(dice))
+
+bot.run(TOKEN)
