@@ -50,6 +50,10 @@ async def has_game_started(ctx):
 @bot.command(name='place', help='Places piece in the spot in the board')
 @commands.check(has_game_started)
 async def place(ctx, row: int, col: int):
+    if(game_started == False):
+        print("games hasnt started hoe")
+        return
+
     if(ctx.author != turn):
         await ctx.send("Please wait for your turn.")
         return
@@ -72,12 +76,15 @@ async def place(ctx, row: int, col: int):
     await draw_board(ctx)
     await ctx.send(f"Piece placed at row {row} and column {col}.")
 
+    await check_win_con(ctx)
+    """
     if(turn == player1):
         turn = player2
         await ctx.send(f"It is {player2}'s turn.")
     else:
         turn = player1
         await ctx.send(f"It is {player1}'s turn.")
+    """
 
 async def draw_board(ctx):
     line = ""
@@ -98,7 +105,75 @@ async def draw_board(ctx):
             count = 0
         
 async def check_win_con(ctx):
-    return
+    win_true = False
+
+    if(turn == player1):
+        piece = 1
+    else:
+        piece = 2
+
+    for i in range(num_rows):
+        not_won = True
+        for j in range(num_cols):
+            position = i * num_cols + j
+            if(board[position] != piece):
+                not_won = False
+                break
+        win_true = not_won
+
+        if(win_true):
+            await ctx.send(f"Congrats player {turn} on winning the game!")
+            game_started = False
+            return
+
+    for i in range(num_cols):
+        not_won = True
+        for j in range(num_rows):
+            position = j * num_rows + i
+            if(board[position] != piece):
+                not_won = False
+                break
+        win_true = not_won
+
+        if(win_true):
+            await ctx.send(f"Congrats player {turn} on winning the game!")
+            game_started = False
+            return
+
+    not_won = True
+    while(curr_row < num_rows and curr_col < num_cols):
+        position = curr_row * num_cols + curr_col
+        if(board[position] != piece):
+            not_won = False
+            break
+        curr_row += 1
+        curr_col += 1
+    win_true = not_won
+
+    if(win_true):
+        await ctx.send(f"Congrats player {turn} on winning the game!")
+        game_started = False
+        return  
+
+    curr_row = 2
+    curr_col = 0
+
+    not_won = True
+    while(curr_row >= 0 and curr_col < num_cols):
+        position = curr_row * num_cols + curr_col
+        if(board[position] != piece):
+            not_won = False
+            break
+        curr_row -= 1
+        curr_col += 1
+    win_true = not_won
+
+    if(win_true):
+        await ctx.send(f"Congrats player {turn} on winning the game!")
+        game_started = False
+        return
+    
+
             
 
 
