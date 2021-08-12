@@ -72,14 +72,12 @@ async def place(ctx, row: int, col: int):
     await draw_board(ctx)
     await ctx.send(f"Piece placed at row {row} and column {col}.")
 
-    """
     if(turn == player1):
         turn = player2
         await ctx.send(f"It is {player2}'s turn.")
     else:
         turn = player1
         await ctx.send(f"It is {player1}'s turn.")
-    """
 
 async def draw_board(ctx):
     line = ""
