@@ -38,7 +38,9 @@ async def start_game(ctx, p1: discord.Member, p2: discord.Member):
         await ctx.send(f"It is {player2}'s turn.")
     else:
         turn = p1
-        await ctx.send(f"It is {player1}'s turn.")
+        await ctx.send(f"It is {player2}'s turn.")
+
+    await draw_board(ctx)
 
     game_started = True
 
@@ -52,8 +54,16 @@ async def place(ctx, row: int, col: int):
         await ctx.send("Please wait for your turn.")
         return
 
+    if(row > 3 or col > 3):
+        await ctx.send("Please enter a valid row/column.")
+        return
+
     position = (row - 1) * num_cols + (col - 1)
 
+    if(board[position] != 0):
+        await ctx.send(f"There already is a piece placed at row {row} and column {col}, please try again.")
+        return
+        
     if(turn == player1):
         board[position] = 1
     else:
@@ -61,6 +71,15 @@ async def place(ctx, row: int, col: int):
 
     await draw_board(ctx)
     await ctx.send(f"Piece placed at row {row} and column {col}.")
+
+    """
+    if(turn == player1):
+        turn = player2
+        await ctx.send(f"It is {player2}'s turn.")
+    else:
+        turn = player1
+        await ctx.send(f"It is {player1}'s turn.")
+    """
 
 async def draw_board(ctx):
     line = ""
@@ -75,14 +94,13 @@ async def draw_board(ctx):
         else:
             line += ":regional_indicator_x:"
             count += 1
-        
         if(count == num_cols):
             await ctx.send(line)
             line = ""
             count = 0
         
-
-
+async def check_win_con(ctx):
+    return
             
 
 
