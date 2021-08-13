@@ -31,14 +31,14 @@ async def start_game(ctx, p1: discord.Member, p2: discord.Member):
 
     await ctx.send(f"Game has started between {player1} and {player2}")
 
-    first_turn = random.randint(1, 1)
+    first_turn = random.randint(0, 1)
 
     if(first_turn):
         turn = p2
         await ctx.send(f"It is {player2}'s turn.")
     else:
         turn = p1
-        await ctx.send(f"It is {player2}'s turn.")
+        await ctx.send(f"It is {player1}'s turn.")
 
     await draw_board(ctx)
 
@@ -50,6 +50,8 @@ async def has_game_started(ctx):
 @bot.command(name='place', help='Places piece in the spot in the board')
 @commands.check(has_game_started)
 async def place(ctx, row: int, col: int):
+    global turn
+
     if(game_started == False):
         print("games hasnt started hoe")
         return
@@ -58,7 +60,7 @@ async def place(ctx, row: int, col: int):
         await ctx.send("Please wait for your turn.")
         return
 
-    if(row > 3 or col > 3):
+    if(row > num_rows or col > num_cols or row <= 0 or col <= 0):
         await ctx.send("Please enter a valid row/column.")
         return
 
@@ -77,14 +79,13 @@ async def place(ctx, row: int, col: int):
     await ctx.send(f"Piece placed at row {row} and column {col}.")
 
     await check_win_con(ctx)
-    """
+
     if(turn == player1):
         turn = player2
         await ctx.send(f"It is {player2}'s turn.")
     else:
         turn = player1
         await ctx.send(f"It is {player1}'s turn.")
-    """
 
 async def draw_board(ctx):
     line = ""
@@ -105,7 +106,13 @@ async def draw_board(ctx):
             count = 0
         
 async def check_win_con(ctx):
+    global game_started
     win_true = False
+
+    if(0 not in board):
+        await ctx.send(f"The game has ended in a draw between {player1} and {player2}.")
+        game_started = False
+        return
 
     if(turn == player1):
         piece = 1
@@ -140,6 +147,9 @@ async def check_win_con(ctx):
             game_started = False
             return
 
+    curr_row = 0
+    curr_col = 0
+    
     not_won = True
     while(curr_row < num_rows and curr_col < num_cols):
         position = curr_row * num_cols + curr_col
@@ -172,34 +182,5 @@ async def check_win_con(ctx):
         await ctx.send(f"Congrats player {turn} on winning the game!")
         game_started = False
         return
-    
-
-            
-
-
-
-"""
-@bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
-async def nine_nine(ctx):
-    brooklyn_99_quotes = [
-        'I\'m the human form of the 💯 emoji.',
-        'Bingpot!',
-        (
-            'Cool. Cool cool cool cool cool cool cool, '
-            'no doubt no doubt no doubt no doubt.'
-        ),
-    ]
-
-    response = random.choice(brooklyn_99_quotes)
-    await ctx.send(response)
-
-@bot.command(name='roll_dice', help='Simulates rolling dice.')
-async def roll(ctx, number_of_dice: int, number_of_sides: int):
-    dice = [
-        str(random.choice(range(1, number_of_sides + 1)))
-        for _ in range(number_of_dice)
-    ]
-    await ctx.send(', '.join(dice))
-"""
 
 bot.run(TOKEN)
