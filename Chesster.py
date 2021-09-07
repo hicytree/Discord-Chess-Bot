@@ -78,14 +78,15 @@ async def place(ctx, row: int, col: int):
     await draw_board(ctx)
     await ctx.send(f"Piece placed at row {row} and column {col}.")
 
-    await check_win_con(ctx)
-
-    if(turn == player1):
-        turn = player2
-        await ctx.send(f"It is {player2}'s turn.")
+    if(await check_win_con(ctx)):
+        return
     else:
-        turn = player1
-        await ctx.send(f"It is {player1}'s turn.")
+        if(turn == player1):
+            turn = player2
+            await ctx.send(f"It is {player2}'s turn.")
+        else:
+            turn = player1
+            await ctx.send(f"It is {player1}'s turn.")
 
 async def draw_board(ctx):
     line = ""
@@ -112,7 +113,7 @@ async def check_win_con(ctx):
     if(0 not in board):
         await ctx.send(f"The game has ended in a draw between {player1} and {player2}.")
         game_started = False
-        return
+        return True
 
     if(turn == player1):
         piece = 1
@@ -131,7 +132,7 @@ async def check_win_con(ctx):
         if(win_true):
             await ctx.send(f"Congrats player {turn} on winning the game!")
             game_started = False
-            return
+            return True
 
     for i in range(num_cols):
         not_won = True
@@ -145,7 +146,7 @@ async def check_win_con(ctx):
         if(win_true):
             await ctx.send(f"Congrats player {turn} on winning the game!")
             game_started = False
-            return
+            return True
 
     curr_row = 0
     curr_col = 0
@@ -163,7 +164,7 @@ async def check_win_con(ctx):
     if(win_true):
         await ctx.send(f"Congrats player {turn} on winning the game!")
         game_started = False
-        return  
+        return True
 
     curr_row = 2
     curr_col = 0
@@ -181,6 +182,6 @@ async def check_win_con(ctx):
     if(win_true):
         await ctx.send(f"Congrats player {turn} on winning the game!")
         game_started = False
-        return
+        return True
 
 bot.run(TOKEN)
