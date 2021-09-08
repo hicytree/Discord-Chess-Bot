@@ -1,3 +1,4 @@
+from io import StringIO
 import os
 import random
 from dotenv import load_dotenv
@@ -26,14 +27,14 @@ async def start_game(ctx, p1: discord.Member, p2: discord.Member):
     global turn
     global game_started
 
-    board = [[2, 3, 4, 5, 6, 4, 3, 2], 
+    board = [[2, 3, 4, 6, 5, 4, 3, 2], 
              [1, 1, 1, 1, 1, 1, 1, 1], 
              [0, 0, 0, 0, 0, 0, 0, 0],
              [0, 0, 0, 0, 0, 0, 0, 0],
              [0, 0, 0, 0, 0, 0, 0, 0],
              [0, 0, 0, 0, 0, 0, 0, 0],
              [7, 7, 7, 7, 7, 7, 7, 7],
-             [8, 9, 10, 11, 12, 10, 9, 8]]
+             [8, 9, 10, 12, 11, 10, 9, 8]]
 
     player1 = p1
     player2 = p2
@@ -58,7 +59,7 @@ async def has_game_started(ctx):
 
 @bot.command(name='place', help='Places piece in the spot in the board')
 @commands.check(has_game_started)
-async def place(ctx, row: int, col: int):
+async def place(ctx, pos1: str, pos2: str):
     global turn
 
     if(game_started == False):
@@ -68,6 +69,17 @@ async def place(ctx, row: int, col: int):
     if(ctx.author != turn):
         await ctx.send("Please wait for your turn.")
         return
+
+    pos1 = pos1.lower()
+    pos2 = pos2.lower()
+
+    if(not is_valid_pos(pos1, pos2)):
+        await ctx.send("Please enter valid positions.")
+        return
+
+    or_x, or_y = find_coor(pos1)
+
+    dest_x, dest_y = find_coor(pos2)
 
     if(row > num_rows or col > num_cols or row <= 0 or col <= 0):
         await ctx.send("Please enter a valid row/column.")
@@ -96,6 +108,49 @@ async def place(ctx, row: int, col: int):
         else:
             turn = player1
             await ctx.send(f"It is {player1}'s turn.")
+
+def find_coor(str):
+    row = -1
+    col = -1
+
+    if str[0] == 'a':
+        col = 0
+    elif str[0] == 'b':
+        col = 1
+    elif str[0] == 'c':
+        col = 2
+    elif str[0] == 'd':
+        col = 3
+    elif str[0] == 'e':
+        col = 4
+    elif str[0] == 'f':
+        col = 5
+    elif str[0] == 'g':
+        col = 6
+    elif str[0] == 'h':
+        col = 7
+
+    if str[1] == '8':
+        row = 0
+    elif str[1] == '7':
+        row = 1
+    elif str[1] == '6':
+        row = 2
+    elif str[1] == '5':
+        row = 3
+    elif str[1] == '4':
+        row = 4
+    elif str[1] == '3':
+        row = 5
+    elif str[1] == '2':
+        row = 6
+    elif str[1] == '1':
+        row = 7
+    
+    return row, col
+
+def is_valid_pos(pos1, pos2):
+    return True
 
 async def draw_board(ctx):
     cboard = Image.open("chessboard.png")
