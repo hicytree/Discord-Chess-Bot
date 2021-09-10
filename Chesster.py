@@ -25,16 +25,17 @@ async def start_game(ctx, p1: discord.Member, p2: discord.Member):
     global player1
     global player2
     global turn
+    global piece_turn
     global game_started
 
-    board = [[2, 3, 4, 6, 5, 4, 3, 2], 
+    board = [[2, 3, 4, 5, 6, 4, 3, 2], 
              [1, 1, 1, 1, 1, 1, 1, 1], 
              [0, 0, 0, 0, 0, 0, 0, 0],
              [0, 0, 0, 0, 0, 0, 0, 0],
              [0, 0, 0, 0, 0, 0, 0, 0],
              [0, 0, 0, 0, 0, 0, 0, 0],
              [7, 7, 7, 7, 7, 7, 7, 7],
-             [8, 9, 10, 12, 11, 10, 9, 8]]
+             [8, 9, 10, 11, 12, 10, 9, 8]]
 
     player1 = p1
     player2 = p2
@@ -42,6 +43,7 @@ async def start_game(ctx, p1: discord.Member, p2: discord.Member):
     await ctx.send(f"Game has started between {player1} and {player2}")
 
     first_turn = random.randint(0, 1)
+    piece_turn = 0
 
     if(first_turn):
         turn = p2
@@ -61,6 +63,7 @@ async def has_game_started(ctx):
 @commands.check(has_game_started)
 async def place(ctx, pos1: str, pos2: str):
     global turn
+    global piece_turn
 
     if(game_started == False):
         print("games hasnt started hoe")
@@ -81,24 +84,29 @@ async def place(ctx, pos1: str, pos2: str):
 
     dest_x, dest_y = find_coor(pos2)
 
-    if(row > num_rows or col > num_cols or row <= 0 or col <= 0):
-        await ctx.send("Please enter a valid row/column.")
+    if(not check_rules(or_x, or_y, dest_x, dest_y)):
+        await ctx.send("Please enter valid positions.")
         return
-
-    position = (row - 1) * num_cols + (col - 1)
-
-    if(board[position] != 0):
-        await ctx.send(f"There already is a piece placed at row {row} and column {col}, please try again.")
-        return
-        
-    if(turn == player1):
-        board[position] = 1
-    else:
-        board[position] = 2
+    
+    board[dest_x][dest_y] = board[or_x][or_y] 
+    board[or_x][or_y] = 0
 
     await draw_board(ctx)
-    await ctx.send(f"Piece placed at row {row} and column {col}.")
 
+    moved_piece = board[dest_x][dest_y]
+    if(moved_piece == 1 or moved_piece == 7):
+        await ctx.send(f"Pawn placed at {pos2.upper()}.")
+    elif(moved_piece == 2 or moved_piece == 8):
+        await ctx.send(f"Rook placed at {pos2.upper()}.")
+    elif(moved_piece == 3 or moved_piece == 9):
+        await ctx.send(f"Knight placed at {pos2.upper()}.")
+    elif(moved_piece == 4 or moved_piece == 10):
+        await ctx.send(f"Bishop placed at {pos2.upper()}.")
+    elif(moved_piece == 5 or moved_piece == 11):
+        await ctx.send(f"Queen placed at {pos2.upper()}.")
+    elif(moved_piece == 6 or moved_piece == 12):
+        await ctx.send(f"King placed at {pos2.upper()}.")
+    
     if(await check_win_con(ctx)):
         return
     else:
@@ -109,6 +117,8 @@ async def place(ctx, pos1: str, pos2: str):
             turn = player1
             await ctx.send(f"It is {player1}'s turn.")
 
+    piece_turn = 1 - piece_turn
+    
 def find_coor(str):
     row = -1
     col = -1
@@ -150,7 +160,42 @@ def find_coor(str):
     return row, col
 
 def is_valid_pos(pos1, pos2):
+    char_set = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'}
+    int_set = {'1', '2', '3', '4', '5', '6', '7', '8'}
+
+    if(pos1[0] not in char_set or pos1[1] not in int_set):
+        return False
+
+    if(pos2[0] not in char_set or pos2[1] not in int_set):
+        return False
+
     return True
+
+def check_rules(or_x, or_y, dest_x, dest_y):
+    global piece_turn
+
+    if (piece_turn == 0 and board[or_x][or_y] < 7 and board[or_x][or_y] > 0) or (piece_turn == 1 and board[or_x][or_y] > 6):
+        return False
+    
+    if (piece_turn == 0 and board[dest_x][dest_y] > 6) or (piece_turn == 1 and board[dest_x][dest_y] < 7 and board[dest_x][dest_y] > 0):
+        return False
+    
+    if board[or_x][or_y] == 1:
+        if abs(dest_y - or_y) == 1 and dest_x - or_x == 1 and board[dest_x][dest_y] > 6:
+            return True
+        elif or_x == 1 and dest_y == or_y and dest_x - or_x == 2 and board[dest_x][dest_y] == 0:
+            return True
+        elif dest_y == or_y and dest_x - or_x == 1 and board[dest_x][dest_y] == 0:
+            return True
+    elif board[or_x][or_y] == 7:
+        if abs(dest_y - or_y) == 1 and or_x - dest_x == 1 and board[dest_x][dest_y] < 7 and board[dest_x][dest_y] > 0:
+            return True
+        elif or_x == 6 and dest_y == or_y and or_x - dest_x == 2 and board[dest_x][dest_y] == 0:
+            return True
+        elif dest_y == or_y and or_x - dest_x == 1 and board[dest_x][dest_y] == 0:
+            return True
+        
+    return False
 
 async def draw_board(ctx):
     cboard = Image.open("chessboard.png")
@@ -225,6 +270,8 @@ async def draw_board(ctx):
     await ctx.send(file=discord.File('currboard.png'))
         
 async def check_win_con(ctx):
+    return False
+    '''
     global game_started
     win_true = False
 
@@ -301,5 +348,6 @@ async def check_win_con(ctx):
         await ctx.send(f"Congrats player {turn} on winning the game!")
         game_started = False
         return True
+    '''
 
 bot.run(TOKEN)
