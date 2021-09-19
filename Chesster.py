@@ -173,6 +173,7 @@ def is_valid_pos(pos1, pos2):
 
 def check_rules(or_x, or_y, dest_x, dest_y):
     global piece_turn
+    poss_moves = set()
 
     if (piece_turn == 0 and board[or_x][or_y] < 7 and board[or_x][or_y] > 0) or (piece_turn == 1 and board[or_x][or_y] > 6):
         return False
@@ -181,21 +182,41 @@ def check_rules(or_x, or_y, dest_x, dest_y):
         return False
     
     if board[or_x][or_y] == 1:
-        if abs(dest_y - or_y) == 1 and dest_x - or_x == 1 and board[dest_x][dest_y] > 6:
-            return True
-        elif or_x == 1 and dest_y == or_y and dest_x - or_x == 2 and board[dest_x][dest_y] == 0:
-            return True
-        elif dest_y == or_y and dest_x - or_x == 1 and board[dest_x][dest_y] == 0:
-            return True
-    elif board[or_x][or_y] == 7:
-        if abs(dest_y - or_y) == 1 and or_x - dest_x == 1 and board[dest_x][dest_y] < 7 and board[dest_x][dest_y] > 0:
-            return True
-        elif or_x == 6 and dest_y == or_y and or_x - dest_x == 2 and board[dest_x][dest_y] == 0:
-            return True
-        elif dest_y == or_y and or_x - dest_x == 1 and board[dest_x][dest_y] == 0:
-            return True
+        if is_on_board(or_x + 1, or_y + 1) and board[or_x + 1][or_y + 1] > 6:
+            poss_moves.add((or_x + 1, or_y + 1))
         
-    return False
+        if is_on_board(or_x + 1, or_y - 1) and board[or_x + 1][or_y - 1] > 6:
+            poss_moves.add((or_x + 1, or_y - 1))
+            
+        if or_x == 1 and board[or_x + 2][or_y] == 0 and board[or_x + 1][or_y] == 0:
+            poss_moves.add((or_x + 2, or_y))
+
+        if is_on_board(or_x + 1, or_y) and board[or_x + 1][or_y] == 0:
+            poss_moves.add((or_x + 1, or_y))
+
+    elif board[or_x][or_y] == 7:
+        if is_on_board(or_x - 1, or_y + 1) and board[or_x - 1][or_y + 1] > 0 and board[or_x - 1][or_y + 1] < 7:
+            poss_moves.add((or_x - 1, or_y + 1))
+        
+        if is_on_board(or_x - 1, or_y - 1) and board[or_x - 1][or_y - 1] > 0 and board[or_x - 1][or_y - 1] < 7:
+            poss_moves.add((or_x - 1, or_y - 1))
+            
+        if or_x == 6 and board[or_x - 2][or_y] == 0 and board[or_x - 1][or_y] == 0:
+            poss_moves.add((or_x - 2, or_y))
+
+        if is_on_board(or_x - 1, or_y) and board[or_x - 1][or_y] == 0:
+            poss_moves.add((or_x - 1, or_y))
+
+    if((dest_x, dest_y) in poss_moves):
+        return True
+    else: 
+        return False
+
+def is_on_board(x, y):
+    if x >= 0 and x < 8 and y >= 0 and y < 8:
+        return True
+    else:
+        return False 
 
 async def draw_board(ctx):
     cboard = Image.open("chessboard.png")
