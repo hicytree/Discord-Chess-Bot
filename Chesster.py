@@ -193,7 +193,73 @@ def check_rules(or_x, or_y, dest_x, dest_y):
 
         if is_on_board(or_x + 1, or_y) and board[or_x + 1][or_y] == 0:
             poss_moves.add((or_x + 1, or_y))
+    
+    elif board[or_x][or_y] == 2:
+        temp_x = or_x
+        temp_y = or_y
 
+        while is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] == 0:
+            poss_moves.add((temp_x + 1, temp_y))        
+            temp_x += 1
+
+        if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 6:
+            poss_moves.add((temp_x + 1, temp_y))        
+        
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
+            poss_moves.add((temp_x - 1, temp_y))        
+            temp_x -= 1
+        
+        if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 6:
+            poss_moves.add((temp_x - 1, temp_y))        
+
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
+            poss_moves.add((temp_x, temp_y + 1))        
+            temp_y += 1
+
+        if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 6:
+            poss_moves.add((temp_x, temp_y + 1))       
+        
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
+            poss_moves.add((temp_x , temp_y - 1))        
+            temp_y -= 1
+        
+        if is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] > 6:
+            poss_moves.add((temp_x, temp_y - 1))       
+    
+    elif board[or_x][or_y] == 3:
+        if is_on_board(or_x - 2, or_y + 1) and (board[or_x - 2][or_y + 1] == 0 or board[or_x - 2][or_y + 1] > 6):
+            poss_moves.add((or_x - 2, or_y + 1)) 
+        
+        if is_on_board(or_x - 2, or_y - 1) and (board[or_x - 2][or_y - 1] == 0 or board[or_x - 2][or_y - 1] > 6):
+            poss_moves.add((or_x - 2, or_y - 1)) 
+        
+        if is_on_board(or_x - 1, or_y - 2) and (board[or_x - 1][or_y - 2] == 0 or board[or_x - 1][or_y - 2] > 6):
+            poss_moves.add((or_x - 1, or_y - 2)) 
+
+        if is_on_board(or_x + 1, or_y - 2) and (board[or_x + 1][or_y - 2] == 0 or board[or_x + 1][or_y - 2] > 6):
+            poss_moves.add((or_x + 1, or_y - 2))
+
+        if is_on_board(or_x - 1, or_y + 2) and (board[or_x - 1][or_y + 2] == 0 or board[or_x - 1][or_y + 2] > 6):
+            poss_moves.add((or_x - 1, or_y + 2)) 
+
+        if is_on_board(or_x + 1, or_y + 2) and (board[or_x + 1][or_y + 2] == 0 or board[or_x + 1][or_y + 2] > 6):
+            poss_moves.add((or_x + 1, or_y + 2))
+
+        if is_on_board(or_x + 2, or_y + 1) and (board[or_x + 2][or_y + 1] == 0 or board[or_x + 2][or_y + 1] > 6):
+                poss_moves.add((or_x + 2, or_y + 1)) 
+        
+        if is_on_board(or_x + 2, or_y - 1) and (board[or_x + 2][or_y - 1] == 0 or board[or_x + 2][or_y - 1] > 6):
+            poss_moves.add((or_x + 2, or_y - 1)) 
+            
     elif board[or_x][or_y] == 7:
         if is_on_board(or_x - 1, or_y + 1) and board[or_x - 1][or_y + 1] > 0 and board[or_x - 1][or_y + 1] < 7:
             poss_moves.add((or_x - 1, or_y + 1))
@@ -206,6 +272,72 @@ def check_rules(or_x, or_y, dest_x, dest_y):
 
         if is_on_board(or_x - 1, or_y) and board[or_x - 1][or_y] == 0:
             poss_moves.add((or_x - 1, or_y))
+    
+    elif board[or_x][or_y] == 8:
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] == 0:
+            poss_moves.add((temp_x + 1, temp_y))        
+            temp_x += 1
+        
+        if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 0 and board[temp_x + 1][temp_y] < 7:
+            poss_moves.add((temp_x + 1, temp_y))        
+        
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
+            poss_moves.add((temp_x - 1, temp_y))        
+            temp_x -= 1
+        
+        if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 0 and board[temp_x - 1][temp_y] < 7:
+            poss_moves.add((temp_x - 1, temp_y))   
+        
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
+            poss_moves.add((temp_x, temp_y + 1))        
+            temp_y += 1
+        
+        if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 0 and board[temp_x][temp_y + 1] < 7:
+            poss_moves.add((temp_x, temp_y + 1))   
+        
+        temp_x = or_x
+        temp_y = or_y
+
+        while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
+            poss_moves.add((temp_x , temp_y - 1))        
+            temp_y -= 1
+
+        if is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] > 0 and board[temp_x][temp_y - 1] < 7:
+            poss_moves.add((temp_x, temp_y - 1))
+
+    elif board[or_x][or_y] == 9:
+        if is_on_board(or_x - 2, or_y + 1) and (board[or_x - 2][or_y + 1] < 7):
+            poss_moves.add((or_x - 2, or_y + 1)) 
+        
+        if is_on_board(or_x - 2, or_y - 1) and (board[or_x - 2][or_y - 1] < 7):
+            poss_moves.add((or_x - 2, or_y - 1)) 
+        
+        if is_on_board(or_x - 1, or_y - 2) and (board[or_x - 1][or_y - 2]< 7):
+            poss_moves.add((or_x - 1, or_y - 2)) 
+
+        if is_on_board(or_x + 1, or_y - 2) and (board[or_x + 1][or_y - 2] < 7):
+            poss_moves.add((or_x + 1, or_y - 2))
+
+        if is_on_board(or_x - 1, or_y + 2) and (board[or_x - 1][or_y + 2] < 7):
+            poss_moves.add((or_x - 1, or_y + 2)) 
+
+        if is_on_board(or_x + 1, or_y + 2) and (board[or_x + 1][or_y + 2] < 7):
+            poss_moves.add((or_x + 1, or_y + 2))
+
+        if is_on_board(or_x + 2, or_y + 1) and (board[or_x + 2][or_y + 1] < 7):
+                poss_moves.add((or_x + 2, or_y + 1)) 
+        
+        if is_on_board(or_x + 2, or_y - 1) and (board[or_x + 2][or_y - 1] < 7):
+            poss_moves.add((or_x + 2, or_y - 1))  
 
     if((dest_x, dest_y) in poss_moves):
         return True
