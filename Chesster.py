@@ -27,6 +27,22 @@ async def start_game(ctx, p1: discord.Member, p2: discord.Member):
     global turn
     global piece_turn
     global game_started
+    
+    global white_rook_1_moved
+    global white_rook_2_moved
+    global white_king_moved
+
+    global black_rook_1_moved
+    global black_rook_2_moved
+    global black_king_moved
+
+    white_rook_1_moved = False
+    white_rook_2_moved = False
+    white_king_moved = False
+
+    black_rook_1_moved = False
+    black_rook_2_moved = False
+    black_king_moved = False
 
     board = [[2, 3, 4, 5, 6, 4, 3, 2], 
              [1, 1, 1, 1, 1, 1, 1, 1], 
@@ -84,12 +100,53 @@ async def place(ctx, pos1: str, pos2: str):
 
     dest_x, dest_y = find_coor(pos2)
 
+    #check if piece trying to move is your piece
+    if (piece_turn == 0 and board[or_x][or_y] < 7 and board[or_x][or_y] > 0) or (piece_turn == 1 and board[or_x][or_y] > 6):
+        await ctx.send("Please enter valid positions.")
+        return
+    
+    if (piece_turn == 0 and board[dest_x][dest_y] > 6) or (piece_turn == 1 and board[dest_x][dest_y] < 7 and board[dest_x][dest_y] > 0):
+        await ctx.send("Please enter valid positions.")
+        return
+
+    #check if piece movement matches chess rules for piece movement
     if(not check_rules(or_x, or_y, dest_x, dest_y)):
         await ctx.send("Please enter valid positions.")
         return
     
     board[dest_x][dest_y] = board[or_x][or_y] 
     board[or_x][or_y] = 0
+
+    if piece_turn == 0 and board[dest_x][dest_y] == 7 and dest_x == 0:
+        await ctx.send("What do you want to promote your pawn into?\n1 for rook\n2 for knight\n3 for bishop\n4 for queen")
+        
+        def check(msg):
+            return msg.author == ctx.author and msg.channel == ctx.channel and msg.content in ["1", "2", "3", "4"]
+
+        msg = await bot.wait_for("message", check=check)
+        if msg.content == "1":
+            board[dest_x][dest_y] = 8
+        elif msg.content == "2":
+            board[dest_x][dest_y] = 9
+        elif msg.content == "3":
+            board[dest_x][dest_y] = 10
+        elif msg.content == "4":
+            board[dest_x][dest_y] = 11
+    elif piece_turn == 1 and board[dest_x][dest_y] == 7 and dest_x == 7:
+        await ctx.send("What do you want to promote your pawn into?\n1 for rook\n2 for knight\n3 for bishop\n4 for queen")
+        
+        def check(msg):
+            return msg.author == ctx.author and msg.channel == ctx.channel and msg.content in ["1", "2", "3", "4"]
+
+        msg = await bot.wait_for("message", check=check)
+        if msg.content == "1":
+            board[dest_x][dest_y] = 2
+        elif msg.content == "2":
+            board[dest_x][dest_y] = 3
+        elif msg.content == "3":
+            board[dest_x][dest_y] = 4
+        elif msg.content == "4":
+            board[dest_x][dest_y] = 5
 
     await draw_board(ctx)
 
@@ -175,14 +232,20 @@ def is_valid_pos(pos1, pos2):
 #given a position on the board with a piece, check if the piece can move to the destination according to chess rules
 def check_rules(or_x, or_y, dest_x, dest_y):
     global piece_turn
-    poss_moves = set()
-
-    #check if piece trying to move is your piece
-    if (piece_turn == 0 and board[or_x][or_y] < 7 and board[or_x][or_y] > 0) or (piece_turn == 1 and board[or_x][or_y] > 6):
-        return False
     
-    if (piece_turn == 0 and board[dest_x][dest_y] > 6) or (piece_turn == 1 and board[dest_x][dest_y] < 7 and board[dest_x][dest_y] > 0):
-        return False
+    global white_rook_1_moved
+    global white_rook_2_moved
+    global white_king_moved
+
+    global black_rook_1_moved
+    global black_rook_2_moved
+    global black_king_moved
+    
+    poss_moves = set()
+    castle1 = False
+    castle2 = False
+    castle3 = False
+    castle4 = False
     
     #black pawn functionality
     if board[or_x][or_y] == 1:
@@ -400,29 +463,37 @@ def check_rules(or_x, or_y, dest_x, dest_y):
 
     #black king functionality
     elif board[or_x][or_y] == 6:
-        if is_on_board(or_x + 1, or_y) and (board[or_x + 1][or_y] == 0 or board[or_x + 1][or_y] > 6):
+        if  is_on_board(or_x + 1, or_y) and not pos_is_threatened(or_x + 1, or_y) and (board[or_x + 1][or_y] == 0 or board[or_x + 1][or_y] > 6):
             poss_moves.add((or_x + 1, or_y))
 
-        if is_on_board(or_x - 1, or_y) and (board[or_x - 1][or_y] == 0 or board[or_x - 1][or_y] > 6):
+        if is_on_board(or_x - 1, or_y) and not pos_is_threatened(or_x - 1, or_y) and (board[or_x - 1][or_y] == 0 or board[or_x - 1][or_y] > 6):
             poss_moves.add((or_x - 1, or_y))
 
-        if is_on_board(or_x, or_y + 1) and (board[or_x][or_y + 1] == 0 or board[or_x][or_y + 1] > 6):
+        if is_on_board(or_x, or_y + 1) and not pos_is_threatened(or_x, or_y + 1) and (board[or_x][or_y + 1] == 0 or board[or_x][or_y + 1] > 6):
             poss_moves.add((or_x, or_y + 1))
 
-        if is_on_board(or_x, or_y - 1) and (board[or_x][or_y - 1] == 0 or board[or_x][or_y - 1] > 6):
+        if is_on_board(or_x, or_y - 1) and not pos_is_threatened(or_x, or_y - 1) and (board[or_x][or_y - 1] == 0 or board[or_x][or_y - 1] > 6):
             poss_moves.add((or_x, or_y - 1))
 
-        if is_on_board(or_x + 1, or_y + 1) and (board[or_x + 1][or_y + 1] == 0 or board[or_x + 1][or_y + 1] > 6):
+        if is_on_board(or_x + 1, or_y + 1) and not pos_is_threatened(or_x + 1, or_y + 1) and (board[or_x + 1][or_y + 1] == 0 or board[or_x + 1][or_y + 1] > 6):
             poss_moves.add((or_x + 1, or_y + 1))
 
-        if is_on_board(or_x + 1, or_y - 1) and (board[or_x + 1][or_y - 1] == 0 or board[or_x + 1][or_y - 1] > 6):
+        if is_on_board(or_x + 1, or_y - 1) and not pos_is_threatened(or_x + 1, or_y - 1) and (board[or_x + 1][or_y - 1] == 0 or board[or_x + 1][or_y - 1] > 6):
             poss_moves.add((or_x + 1, or_y - 1))
 
-        if is_on_board(or_x - 1, or_y + 1) and (board[or_x - 1][or_y + 1] == 0 or board[or_x - 1][or_y + 1] > 6):
+        if is_on_board(or_x - 1, or_y + 1) and not pos_is_threatened(or_x - 1, or_y + 1) and (board[or_x - 1][or_y + 1] == 0 or board[or_x - 1][or_y + 1] > 6):
             poss_moves.add((or_x - 1, or_y + 1))
 
-        if is_on_board(or_x - 1, or_y - 1) and (board[or_x - 1][or_y - 1] == 0 or board[or_x - 1][or_y - 1] > 6):
+        if is_on_board(or_x - 1, or_y - 1) and not pos_is_threatened(or_x - 1, or_y - 1) and (board[or_x - 1][or_y - 1] == 0 or board[or_x - 1][or_y - 1] > 6):
             poss_moves.add((or_x - 1, or_y - 1))
+
+        if black_rook_1_moved == False and black_king_moved == False and board[0][0] == 2 and not pos_is_threatened(0, 0) and not pos_is_threatened(0, 1) and not pos_is_threatened(0, 2) and not pos_is_threatened(0, 3) and not pos_is_threatened(0, 4) and board[0][1] == 0 and board[0][2] == 0 and board[0][3] == 0:
+            poss_moves.add((0, 2))
+            castle1 = True
+
+        if black_rook_2_moved == False and black_king_moved == False and board[0][7] == 2 and not pos_is_threatened(0, 4) and not pos_is_threatened(0, 5) and not pos_is_threatened(0, 6) and not pos_is_threatened(0, 7)  and board[0][5] == 0 and board[0][6] == 0:
+            poss_moves.add((0, 6))
+            castle2 = True
 
     #white pawn functionality
     elif board[or_x][or_y] == 7:
@@ -640,32 +711,66 @@ def check_rules(or_x, or_y, dest_x, dest_y):
 
     #white king functionality
     elif board[or_x][or_y] == 12:
-        if is_on_board(or_x + 1, or_y) and board[or_x + 1][or_y] < 7:
+        if is_on_board(or_x + 1, or_y) and not pos_is_threatened(or_x + 1, or_y) and board[or_x + 1][or_y] < 7:
             poss_moves.add((or_x + 1, or_y))
 
-        if is_on_board(or_x - 1, or_y) and board[or_x - 1][or_y] < 7:
+        if is_on_board(or_x - 1, or_y) and not pos_is_threatened(or_x - 1, or_y) and board[or_x - 1][or_y] < 7:
             poss_moves.add((or_x - 1, or_y))
 
-        if is_on_board(or_x, or_y + 1) and board[or_x][or_y + 1] < 7:
+        if is_on_board(or_x, or_y + 1) and not pos_is_threatened(or_x, or_y + 1) and board[or_x][or_y + 1] < 7:
             poss_moves.add((or_x, or_y + 1))
 
-        if is_on_board(or_x, or_y - 1) and board[or_x][or_y - 1] < 7:
+        if is_on_board(or_x, or_y - 1) and not pos_is_threatened(or_x, or_y - 1) and board[or_x][or_y - 1] < 7:
             poss_moves.add((or_x, or_y - 1))
 
-        if is_on_board(or_x + 1, or_y + 1) and board[or_x + 1][or_y + 1] < 7:
+        if is_on_board(or_x + 1, or_y + 1) and not pos_is_threatened(or_x + 1, or_y + 1) and board[or_x + 1][or_y + 1] < 7:
             poss_moves.add((or_x + 1, or_y + 1))
 
-        if is_on_board(or_x + 1, or_y - 1) and board[or_x + 1][or_y - 1] < 7:
+        if is_on_board(or_x + 1, or_y - 1) and not pos_is_threatened(or_x + 1, or_y - 1) and board[or_x + 1][or_y - 1] < 7:
             poss_moves.add((or_x + 1, or_y - 1))
 
-        if is_on_board(or_x - 1, or_y + 1) and board[or_x - 1][or_y + 1] < 7:
+        if is_on_board(or_x - 1, or_y + 1) and not pos_is_threatened(or_x - 1, or_y + 1) and board[or_x - 1][or_y + 1] < 7:
             poss_moves.add((or_x - 1, or_y + 1))
 
-        if is_on_board(or_x - 1, or_y - 1) and board[or_x - 1][or_y - 1] < 7:
+        if is_on_board(or_x - 1, or_y - 1) and not pos_is_threatened(or_x - 1, or_y - 1) and board[or_x - 1][or_y - 1] < 7:
             poss_moves.add((or_x - 1, or_y - 1))
+
+        if white_rook_1_moved == False and white_king_moved == False and board[7][0] == 8 and not pos_is_threatened(7, 0) and not pos_is_threatened(7, 1) and not pos_is_threatened(7, 2) and not pos_is_threatened(7, 3) and not pos_is_threatened(7, 4) and board[7][1] == 0 and board[7][2] == 0 and board[7][3] == 0:
+            poss_moves.add((7, 2))
+            castle3 = True
+
+        if white_rook_2_moved == False and white_king_moved == False and board[7][7] == 8 and not pos_is_threatened(7, 4) and not pos_is_threatened(7, 5) and not pos_is_threatened(7, 6) and not pos_is_threatened(7, 7)  and board[7][5] == 0 and board[7][6] == 0:
+            poss_moves.add((7, 6))
+            castle4 = True
 
     #using the possible moves, check if the position trying to be moved to is legal
     if((dest_x, dest_y) in poss_moves):
+        if black_rook_1_moved == False and or_x == 0 and or_y == 0:
+            black_rook_1_moved = True
+        elif black_rook_2_moved == False and or_x == 0 and or_y == 7:
+            black_rook_2_moved = True
+        elif black_king_moved == False and or_x == 0 and or_y == 4:
+            black_king_moved = True
+        elif white_rook_1_moved == False and or_x == 7 and or_y == 0:
+            white_rook_1_moved = True
+        elif white_rook_2_moved == False and or_x == 7 and or_y == 7:
+            white_rook_2_moved = True
+        elif white_king_moved == False and or_x == 7 and or_y == 4:
+            white_king_moved = True
+        
+        if castle1 == True:
+            board[0][0] = 0
+            board[0][3] = 2
+        elif castle2 == True:
+            board[0][7] = 0
+            board[0][5] = 2
+        elif castle3 == True:
+            board[7][7] = 0
+            board[7][5] = 8
+        elif castle4 == True:
+            board[7][7] = 0
+            board[7][5] = 8
+
         return True
     else: 
         return False
@@ -675,6 +780,508 @@ def is_on_board(x, y):
         return True
     else:
         return False 
+
+def pos_is_threatened(row, col):
+    global piece_turn
+    poss_moves = set()
+
+    enemy_pieces = set()
+    if piece_turn == 0:
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                if board[i][j] > 0 and board[i][j] < 7:
+                    enemy_pieces.add((i, j))
+    else:
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                if board[i][j] > 6:
+                    enemy_pieces.add((i, j))
+
+    for (x, y) in enemy_pieces:
+        #black pawn functionality
+        if board[x][y] == 1:
+            if is_on_board(x + 1, y + 1) and board[x + 1][y + 1] > 6:
+                poss_moves.add((x + 1, y + 1))
+            
+            if is_on_board(x + 1, y - 1) and board[x + 1][y - 1] > 6:
+                poss_moves.add((x + 1, y - 1))
+                
+            if x == 1 and board[x + 2][y] == 0 and board[x + 1][y] == 0:
+                poss_moves.add((x + 2, y))
+
+            if is_on_board(x + 1, y) and board[x + 1][y] == 0:
+                poss_moves.add((x + 1, y))
+        
+        #black rook functionality
+        elif board[x][y] == 2:
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] == 0:
+                poss_moves.add((temp_x + 1, temp_y))        
+                temp_x += 1
+
+            if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 6:
+                poss_moves.add((temp_x + 1, temp_y))        
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
+                poss_moves.add((temp_x - 1, temp_y))        
+                temp_x -= 1
+            
+            if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 6:
+                poss_moves.add((temp_x - 1, temp_y))        
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
+                poss_moves.add((temp_x, temp_y + 1))        
+                temp_y += 1
+
+            if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 6:
+                poss_moves.add((temp_x, temp_y + 1))       
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
+                poss_moves.add((temp_x , temp_y - 1))        
+                temp_y -= 1
+            
+            if is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] > 6:
+                poss_moves.add((temp_x, temp_y - 1))       
+        
+        #black knight functionality
+        elif board[x][y] == 3:
+            if is_on_board(x - 2, y + 1) and (board[x - 2][y + 1] == 0 or board[x - 2][y + 1] > 6):
+                poss_moves.add((x - 2, y + 1)) 
+            
+            if is_on_board(x - 2, y - 1) and (board[x - 2][y - 1] == 0 or board[x - 2][y - 1] > 6):
+                poss_moves.add((x - 2, y - 1)) 
+            
+            if is_on_board(x - 1, y - 2) and (board[x - 1][y - 2] == 0 or board[x - 1][y - 2] > 6):
+                poss_moves.add((x - 1, y - 2)) 
+
+            if is_on_board(x + 1, y - 2) and (board[x + 1][y - 2] == 0 or board[x + 1][y - 2] > 6):
+                poss_moves.add((x + 1, y - 2))
+
+            if is_on_board(x - 1, y + 2) and (board[x - 1][y + 2] == 0 or board[x - 1][y + 2] > 6):
+                poss_moves.add((x - 1, y + 2)) 
+
+            if is_on_board(x + 1, y + 2) and (board[x + 1][y + 2] == 0 or board[x + 1][y + 2] > 6):
+                poss_moves.add((x + 1, y + 2))
+
+            if is_on_board(x + 2, y + 1) and (board[x + 2][y + 1] == 0 or board[x + 2][y + 1] > 6):
+                    poss_moves.add((x + 2, y + 1)) 
+            
+            if is_on_board(x + 2, y - 1) and (board[x + 2][y - 1] == 0 or board[x + 2][y - 1] > 6):
+                poss_moves.add((x + 2, y - 1)) 
+
+        #black bishop functionality
+        elif board[x][y] == 4:
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                temp_x += 1
+                temp_y += 1
+
+            if is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] > 6:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y - 1))        
+                temp_x += 1
+                temp_y -= 1
+
+            if is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] > 6:
+                poss_moves.add((temp_x + 1, temp_y - 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y + 1))        
+                temp_x -= 1
+                temp_y += 1
+
+            if is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] > 6:
+                poss_moves.add((temp_x - 1, temp_y + 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y - 1))        
+                temp_x -= 1
+                temp_y -= 1
+
+            if is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] > 6:
+                poss_moves.add((temp_x - 1, temp_y - 1))
+
+        #black queen functionality
+        elif board[x][y] == 5:
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] == 0:
+                poss_moves.add((temp_x + 1, temp_y))        
+                temp_x += 1
+
+            if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 6:
+                poss_moves.add((temp_x + 1, temp_y))        
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
+                poss_moves.add((temp_x - 1, temp_y))        
+                temp_x -= 1
+            
+            if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 6:
+                poss_moves.add((temp_x - 1, temp_y))        
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
+                poss_moves.add((temp_x, temp_y + 1))        
+                temp_y += 1
+
+            if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 6:
+                poss_moves.add((temp_x, temp_y + 1))       
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
+                poss_moves.add((temp_x , temp_y - 1))        
+                temp_y -= 1
+            
+            if is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] > 6:
+                poss_moves.add((temp_x, temp_y - 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                temp_x += 1
+                temp_y += 1
+
+            if is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] > 6:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y - 1))        
+                temp_x += 1
+                temp_y -= 1
+
+            if is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] > 6:
+                poss_moves.add((temp_x + 1, temp_y - 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y + 1))        
+                temp_x -= 1
+                temp_y += 1
+
+            if is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] > 6:
+                poss_moves.add((temp_x - 1, temp_y + 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y - 1))        
+                temp_x -= 1
+                temp_y -= 1
+
+            if is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] > 6:
+                poss_moves.add((temp_x - 1, temp_y - 1))
+
+        #black king functionality
+        elif board[x][y] == 6:
+            if is_on_board(x + 1, y) and (board[x + 1][y] == 0 or board[x + 1][y] > 6):
+                poss_moves.add((x + 1, y))
+
+            if is_on_board(x - 1, y) and (board[x - 1][y] == 0 or board[x - 1][y] > 6):
+                poss_moves.add((x - 1, y))
+
+            if is_on_board(x, y + 1) and (board[x][y + 1] == 0 or board[x][y + 1] > 6):
+                poss_moves.add((x, y + 1))
+
+            if is_on_board(x, y - 1) and (board[x][y - 1] == 0 or board[x][y - 1] > 6):
+                poss_moves.add((x, y - 1))
+
+            if is_on_board(x + 1, y + 1) and (board[x + 1][y + 1] == 0 or board[x + 1][y + 1] > 6):
+                poss_moves.add((x + 1, y + 1))
+
+            if is_on_board(x + 1, y - 1) and (board[x + 1][y - 1] == 0 or board[x + 1][y - 1] > 6):
+                poss_moves.add((x + 1, y - 1))
+
+            if is_on_board(x - 1, y + 1) and (board[x - 1][y + 1] == 0 or board[x - 1][y + 1] > 6):
+                poss_moves.add((x - 1, y + 1))
+
+            if is_on_board(x - 1, y - 1) and (board[x - 1][y - 1] == 0 or board[x - 1][y - 1] > 6):
+                poss_moves.add((x - 1, y - 1))
+
+        #white pawn functionality
+        elif board[x][y] == 7:
+            if is_on_board(x - 1, y + 1) and board[x - 1][y + 1] > 0 and board[x - 1][y + 1] < 7:
+                poss_moves.add((x - 1, y + 1))
+            
+            if is_on_board(x - 1, y - 1) and board[x - 1][y - 1] > 0 and board[x - 1][y - 1] < 7:
+                poss_moves.add((x - 1, y - 1))
+                
+            if x == 6 and board[x - 2][y] == 0 and board[x - 1][y] == 0:
+                poss_moves.add((x - 2, y))
+
+            if is_on_board(x - 1, y) and board[x - 1][y] == 0:
+                poss_moves.add((x - 1, y))
+        
+        #white rook functionality
+        elif board[x][y] == 8:
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] == 0:
+                poss_moves.add((temp_x + 1, temp_y))        
+                temp_x += 1
+            
+            if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 0 and board[temp_x + 1][temp_y] < 7:
+                poss_moves.add((temp_x + 1, temp_y))        
+            
+            temp_x = or_x
+            temp_y = or_y
+
+            while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
+                poss_moves.add((temp_x - 1, temp_y))        
+                temp_x -= 1
+            
+            if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 0 and board[temp_x - 1][temp_y] < 7:
+                poss_moves.add((temp_x - 1, temp_y))   
+            
+            temp_x = or_x
+            temp_y = or_y
+
+            while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
+                poss_moves.add((temp_x, temp_y + 1))        
+                temp_y += 1
+            
+            if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 0 and board[temp_x][temp_y + 1] < 7:
+                poss_moves.add((temp_x, temp_y + 1))   
+            
+            temp_x = or_x
+            temp_y = or_y
+
+            while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
+                poss_moves.add((temp_x , temp_y - 1))        
+                temp_y -= 1
+
+            if is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] > 0 and board[temp_x][temp_y - 1] < 7:
+                poss_moves.add((temp_x, temp_y - 1))
+
+        #white knight functionality
+        elif board[x][y] == 9:
+            if is_on_board(x - 2, y + 1) and (board[x - 2][y + 1] < 7):
+                poss_moves.add((x - 2, y + 1)) 
+            
+            if is_on_board(x - 2, y - 1) and (board[x - 2][y - 1] < 7):
+                poss_moves.add((x - 2, y - 1)) 
+            
+            if is_on_board(x - 1, y - 2) and (board[x - 1][y - 2]< 7):
+                poss_moves.add((x - 1, y - 2)) 
+
+            if is_on_board(x + 1, y - 2) and (board[x + 1][y - 2] < 7):
+                poss_moves.add((x + 1, y - 2))
+
+            if is_on_board(x - 1, y + 2) and (board[x - 1][y + 2] < 7):
+                poss_moves.add((x - 1, y + 2)) 
+
+            if is_on_board(x + 1, y + 2) and (board[x + 1][y + 2] < 7):
+                poss_moves.add((x + 1, y + 2))
+
+            if is_on_board(x + 2, y + 1) and (board[x + 2][y + 1] < 7):
+                    poss_moves.add((x + 2, y + 1)) 
+            
+            if is_on_board(x + 2, y - 1) and (board[x + 2][y - 1] < 7):
+                poss_moves.add((x + 2, y - 1))  
+            
+        #white bishop functionality
+        elif board[x][y] == 10:
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                temp_x += 1
+                temp_y += 1
+
+            if is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] > 0 and board[temp_x + 1][temp_y + 1] < 7:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y - 1))        
+                temp_x += 1
+                temp_y -= 1
+
+            if is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] > 0 and board[temp_x + 1][temp_y - 1] < 7:
+                poss_moves.add((temp_x + 1, temp_y - 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y + 1))        
+                temp_x -= 1
+                temp_y += 1
+
+            if is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] > 0 and board[temp_x - 1][temp_y + 1] < 7:
+                poss_moves.add((temp_x - 1, temp_y + 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y - 1))        
+                temp_x -= 1
+                temp_y -= 1
+
+            if is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] > 0 and board[temp_x - 1][temp_y - 1] < 7:
+                poss_moves.add((temp_x - 1, temp_y - 1))
+        
+        #white queen functionality
+        elif board[x][y] == 11:
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] == 0:
+                poss_moves.add((temp_x + 1, temp_y))        
+                temp_x += 1
+            
+            if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 0 and board[temp_x + 1][temp_y] < 7:
+                poss_moves.add((temp_x + 1, temp_y))        
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
+                poss_moves.add((temp_x - 1, temp_y))        
+                temp_x -= 1
+            
+            if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 0 and board[temp_x - 1][temp_y] < 7:
+                poss_moves.add((temp_x - 1, temp_y))   
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
+                poss_moves.add((temp_x, temp_y + 1))        
+                temp_y += 1
+            
+            if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 0 and board[temp_x][temp_y + 1] < 7:
+                poss_moves.add((temp_x, temp_y + 1))   
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
+                poss_moves.add((temp_x , temp_y - 1))        
+                temp_y -= 1
+
+            if is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] > 0 and board[temp_x][temp_y - 1] < 7:
+                poss_moves.add((temp_x, temp_y - 1))
+            
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                temp_x += 1
+                temp_y += 1
+
+            if is_on_board(temp_x + 1, temp_y + 1) and board[temp_x + 1][temp_y + 1] > 0 and board[temp_x + 1][temp_y + 1] < 7:
+                poss_moves.add((temp_x + 1, temp_y + 1))        
+                
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x + 1, temp_y - 1))        
+                temp_x += 1
+                temp_y -= 1
+
+            if is_on_board(temp_x + 1, temp_y - 1) and board[temp_x + 1][temp_y - 1] > 0 and board[temp_x + 1][temp_y - 1] < 7:
+                poss_moves.add((temp_x + 1, temp_y - 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y + 1))        
+                temp_x -= 1
+                temp_y += 1
+
+            if is_on_board(temp_x - 1, temp_y + 1) and board[temp_x - 1][temp_y + 1] > 0 and board[temp_x - 1][temp_y + 1] < 7:
+                poss_moves.add((temp_x - 1, temp_y + 1))
+
+            temp_x = x
+            temp_y = y
+
+            while is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] == 0:
+                poss_moves.add((temp_x - 1, temp_y - 1))        
+                temp_x -= 1
+                temp_y -= 1
+
+            if is_on_board(temp_x - 1, temp_y - 1) and board[temp_x - 1][temp_y - 1] > 0 and board[temp_x - 1][temp_y - 1] < 7:
+                poss_moves.add((temp_x - 1, temp_y - 1))
+
+        #white king functionality
+        elif board[x][y] == 12:
+            if is_on_board(x + 1, y) and board[x + 1][y] < 7:
+                poss_moves.add((x + 1, y))
+
+            if is_on_board(x - 1, y) and board[x - 1][y] < 7:
+                poss_moves.add((x - 1, y))
+
+            if is_on_board(x, y + 1) and board[x][y + 1] < 7:
+                poss_moves.add((x, y + 1))
+
+            if is_on_board(x, y - 1) and board[x][y - 1] < 7:
+                poss_moves.add((x, y - 1))
+
+            if is_on_board(x + 1, y + 1) and board[x + 1][y + 1] < 7:
+                poss_moves.add((x + 1, y + 1))
+
+            if is_on_board(x + 1, y - 1) and board[x + 1][y - 1] < 7:
+                poss_moves.add((x + 1, y - 1))
+
+            if is_on_board(x - 1, y + 1) and board[x - 1][y + 1] < 7:
+                poss_moves.add((x - 1, y + 1))
+
+            if is_on_board(x - 1, y - 1) and board[x - 1][y - 1] < 7:
+                poss_moves.add((x - 1, y - 1))
+
+        if((row, col) in poss_moves):
+            return True
+
+    return False
 
 #draw the board according to the positions of the pieces of the board array
 async def draw_board(ctx):
@@ -751,83 +1358,6 @@ async def draw_board(ctx):
         
 async def check_win_con(ctx):
     return False
-    '''
-    global game_started
-    win_true = False
-
-    if(0 not in board):
-        await ctx.send(f"The game has ended in a draw between {player1} and {player2}.")
-        game_started = False
-        return True
-
-    if(turn == player1):
-        piece = 1
-    else:
-        piece = 2
-
-    for i in range(num_rows):
-        not_won = True
-        for j in range(num_cols):
-            position = i * num_cols + j
-            if(board[position] != piece):
-                not_won = False
-                break
-        win_true = not_won
-
-        if(win_true):
-            await ctx.send(f"Congrats player {turn} on winning the game!")
-            game_started = False
-            return True
-
-    for i in range(num_cols):
-        not_won = True
-        for j in range(num_rows):
-            position = j * num_rows + i
-            if(board[position] != piece):
-                not_won = False
-                break
-        win_true = not_won
-
-        if(win_true):
-            await ctx.send(f"Congrats player {turn} on winning the game!")
-            game_started = False
-            return True
-
-    curr_row = 0
-    curr_col = 0
     
-    not_won = True
-    while(curr_row < num_rows and curr_col < num_cols):
-        position = curr_row * num_cols + curr_col
-        if(board[position] != piece):
-            not_won = False
-            break
-        curr_row += 1
-        curr_col += 1
-    win_true = not_won
-
-    if(win_true):
-        await ctx.send(f"Congrats player {turn} on winning the game!")
-        game_started = False
-        return True
-
-    curr_row = 2
-    curr_col = 0
-
-    not_won = True
-    while(curr_row >= 0 and curr_col < num_cols):
-        position = curr_row * num_cols + curr_col
-        if(board[position] != piece):
-            not_won = False
-            break
-        curr_row -= 1
-        curr_col += 1
-    win_true = not_won
-
-    if(win_true):
-        await ctx.send(f"Congrats player {turn} on winning the game!")
-        game_started = False
-        return True
-    '''
 
 bot.run(TOKEN)
