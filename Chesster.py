@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import discord
 from discord.ext import commands
 from PIL import Image
+import copy
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -232,6 +233,7 @@ def is_valid_pos(pos1, pos2):
 #given a position on the board with a piece, check if the piece can move to the destination according to chess rules
 def check_rules(or_x, or_y, dest_x, dest_y):
     global piece_turn
+    global board
     
     global white_rook_1_moved
     global white_rook_2_moved
@@ -246,7 +248,27 @@ def check_rules(or_x, or_y, dest_x, dest_y):
     castle2 = False
     castle3 = False
     castle4 = False
-    
+
+    in_check = False
+    king_row = -1
+    king_col = -1
+
+    if piece_turn == 0:
+        for i in range(len(board)):
+            for j in range(len(board[i])):
+                if board[i][j] == 12:
+                    king_row = i
+                    king_col = j
+    else:
+         for i in range(len(board)):
+            for j in range(len(board[i])):
+                if board[i][j] == 6:
+                    king_row = i
+                    king_col = j
+
+    if pos_is_threatened(king_row, king_col):
+        in_check = True
+
     #black pawn functionality
     if board[or_x][or_y] == 1:
         if is_on_board(or_x + 1, or_y + 1) and board[or_x + 1][or_y + 1] > 6:
@@ -745,6 +767,31 @@ def check_rules(or_x, or_y, dest_x, dest_y):
 
     #using the possible moves, check if the position trying to be moved to is legal
     if((dest_x, dest_y) in poss_moves):
+        if in_check:
+            temp_board = copy.deepcopy(board)
+            board[dest_x][dest_y] = board[or_x][or_y] 
+            board[or_x][or_y] = 0
+
+            if piece_turn == 0:
+                for i in range(len(board)):
+                    for j in range(len(board[i])):
+                        if board[i][j] == 12:
+                            king_row = i
+                            king_col = j
+            else:
+                for i in range(len(board)):
+                    for j in range(len(board[i])):
+                        if board[i][j] == 6:
+                            king_row = i
+                            king_col = j
+            
+
+            if pos_is_threatened(king_row, king_col):
+                board = temp_board
+                return False
+            else:
+                board = temp_board
+
         if black_rook_1_moved == False and or_x == 0 and or_y == 0:
             black_rook_1_moved = True
         elif black_rook_2_moved == False and or_x == 0 and or_y == 7:
@@ -1064,8 +1111,8 @@ def pos_is_threatened(row, col):
             if is_on_board(temp_x + 1, temp_y) and board[temp_x + 1][temp_y] > 0 and board[temp_x + 1][temp_y] < 7:
                 poss_moves.add((temp_x + 1, temp_y))        
             
-            temp_x = or_x
-            temp_y = or_y
+            temp_x = x
+            temp_y = y
 
             while is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] == 0:
                 poss_moves.add((temp_x - 1, temp_y))        
@@ -1074,8 +1121,8 @@ def pos_is_threatened(row, col):
             if is_on_board(temp_x - 1, temp_y) and board[temp_x - 1][temp_y] > 0 and board[temp_x - 1][temp_y] < 7:
                 poss_moves.add((temp_x - 1, temp_y))   
             
-            temp_x = or_x
-            temp_y = or_y
+            temp_x = x
+            temp_y = y
 
             while is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] == 0:
                 poss_moves.add((temp_x, temp_y + 1))        
@@ -1084,8 +1131,8 @@ def pos_is_threatened(row, col):
             if is_on_board(temp_x, temp_y + 1) and board[temp_x][temp_y + 1] > 0 and board[temp_x][temp_y + 1] < 7:
                 poss_moves.add((temp_x, temp_y + 1))   
             
-            temp_x = or_x
-            temp_y = or_y
+            temp_x = x
+            temp_y = y
 
             while is_on_board(temp_x, temp_y - 1) and board[temp_x][temp_y - 1] == 0:
                 poss_moves.add((temp_x , temp_y - 1))        
